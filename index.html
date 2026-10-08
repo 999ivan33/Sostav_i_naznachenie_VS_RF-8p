@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>ВС РФ: Тактический рубеж</title>
+  <style>
+    /* =========================================================
+       1. СБРОС И ЗАПРЕТ ВЫДЕЛЕНИЯ / ЗУМА
+       ========================================================= */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none !important;
+      -webkit-user-select: none !important;
+      -webkit-touch-callout: none !important;
+    }
+
+    body {
+      background-color: #07090e;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: calc(env(safe-area-inset-top) + 12px) 12px calc(env(safe-area-inset-bottom) + 12px);
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: 
+        radial-gradient(circle at 50% 10%, rgba(2, 132, 199, 0.12), transparent 60%),
+        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      background-size: 100% 100%, 24px 24px, 24px 24px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* =========================================================
+       2. КАРКАС ИНТЕРФЕЙСА
+       ========================================================= */
+    .app-card {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 540px;
+      background: #0f141f;
+      border: 1px solid #1e293b;
+      border-radius: 14px;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.7);
+      padding: 18px 16px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .top-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    .badge-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(2, 132, 199, 0.15);
+      color: #38bdf8;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(2, 132, 199, 0.35);
+    }
+
+    .counter-text {
+      font-size: 12px;
+      font-weight: 600;
+      color: #94a3b8;
+    }
+
+    .progress-bar-bg {
+      width: 100%;
+      height: 5px;
+      background: #172033;
+      border-radius: 99px;
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #0284c7, #38bdf8);
+      transition: width 0.25s ease;
+    }
+
+    /* =========================================================
+       3. ЗОНА ВОПРОСА
+       ========================================================= */
+    .question-zone {
+      position: relative;
+      min-height: 250px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .protected-box {
+      filter: blur(18px);
+      opacity: 0.12;
+      transition: filter 0.1s ease, opacity 0.1s ease;
+    }
+
+    .protected-box.active-view {
+      filter: blur(0);
+      opacity: 1;
+    }
+
+    .question-heading {
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1.45;
+      color: #f8fafc;
+      margin-bottom: 14px;
+    }
+
+    .options-list {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .option-item {
+      background: #151c2c;
+      border: 1px solid #222f48;
+      border-radius: 9px;
+      padding: 13px 14px;
+      font-size: 13.5px;
+      line-height: 1.35;
+      color: #cbd5e1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: background 0.1s ease, border-color 0.1s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .option-item.tapped {
+      background: #0284c7 !important;
+      border-color: #38bdf8 !important;
+      color: #ffffff !important;
+    }
+
+    .option-letter {
+      width: 22px;
+      height: 22px;
+      border-radius: 5px;
+      background: #222f48;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: #94a3b8;
+      flex-shrink: 0;
+      pointer-events: none;
+    }
+
+    .option-text {
+      pointer-events: none;
+    }
+
+    /* Сенсорная кнопка удержания */
+    .hold-trigger {
+      width: 100%;
+      background: #0284c7;
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      padding: 16px;
+      font-size: 13.5px;
+      font-weight: 700;
+      text-align: center;
+      cursor: pointer;
+      margin-top: 16px;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+      -webkit-tap-highlight-color: transparent;
+      touch-action: none;
+    }
+
+    .hold-trigger.holding {
+      background: #025a87;
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.4);
+    }
+
+    /* Оверлей блокировки экрана */
+    #blackout-shield {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #000000;
+      z-index: 999999;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px;
+    }
+
+    .blackout-icon { font-size: 46px; margin-bottom: 12px; }
+    .blackout-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #ef4444;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+    .blackout-desc {
+      font-size: 13px;
+      color: #94a3b8;
+      line-height: 1.45;
+      max-width: 380px;
+    }
+
+    .screen-view { display: none; }
+    .screen-view.current { display: block; }
+
+    .result-content { text-align: center; padding: 12px 4px; }
+
+    .mark-circle {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      margin: 0 auto 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 34px;
+      font-weight: 800;
+      border: 3px solid;
+    }
+
+    .mark-5 { color: #4ade80; border-color: #4ade80; background: rgba(74, 222, 128, 0.12); }
+    .mark-4 { color: #60a5fa; border-color: #60a5fa; background: rgba(96, 165, 250, 0.12); }
+    .mark-3 { color: #facc15; border-color: #facc15; background: rgba(250, 204, 21, 0.12); }
+    .mark-2 { color: #f87171; border-color: #f87171; background: rgba(248, 113, 113, 0.12); }
+
+    .score-title { font-size: 18px; font-weight: 700; color: #f8fafc; margin-bottom: 4px; }
+    .score-percent { font-size: 13px; color: #94a3b8; margin-bottom: 14px; }
+
+    .analysis-card {
+      background: #151c2c;
+      border: 1px solid #222f48;
+      border-radius: 9px;
+      padding: 13px;
+      text-align: left;
+      font-size: 13px;
+      line-height: 1.45;
+      color: #cbd5e1;
+      margin-bottom: 16px;
+    }
+
+    .action-btn {
+      background: #0284c7;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      font-size: 13.5px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+
+<div id="blackout-shield">
+  <div class="blackout-icon">🛡️</div>
+  <div class="blackout-title">Фиксация экрана запрещена!</div>
+  <div class="blackout-desc">
+    Обнаружена попытка скриншота, свайп шторки или потеря фокуса.<br><br>
+    <strong>Текущий вопрос аннулирован (0 баллов).</strong><br>
+    Выполняется переход к следующему заданию...
+  </div>
+</div>
+
+<div class="app-card">
+
+  <div id="test-screen" class="screen-view current">
+    <div class="top-meta">
+      <span class="badge-label">🇷🇺 ОБЗР • ВС РФ</span>
+      <span id="q-counter" class="counter-text">Вопрос 1 из 20</span>
+    </div>
+
+    <div class="progress-bar-bg">
+      <div id="p-bar" class="progress-bar-fill"></div>
+    </div>
+
+    <div class="question-zone">
+      <div id="protected-wrap" class="protected-box">
+        <h2 id="q-text" class="question-heading">Загрузка...</h2>
+        <div id="options-box" class="options-list"></div>
+      </div>
+    </div>
+
+    <button id="hold-btn" class="hold-trigger" type="button">
+      👇 ЗАЖМИТЕ И УДЕРЖИВАЙТЕ ДЛЯ ЧТЕНИЯ
+    </button>
+  </div>
+
+  <div id="result-screen" class="screen-view">
+    <div class="result-content">
+      <div id="mark-circle" class="mark-circle">5</div>
+      <div id="score-text" class="score-title">20 из 20 верно</div>
+      <div id="percent-text" class="score-percent">100% правильных ответов</div>
+
+      <div class="analysis-card">
+        <strong>Заключение преподавателя:</strong>
+        <p id="analysis-text" style="margin-top: 5px;"></p>
+      </div>
+
+      <button class="action-btn" onclick="location.reload()">Пройти заново</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const questionBank = [
+  {
+    q: "Какая ключевая задача возложена на Президента Российской Федерации?",
+    a: [
+      "Проводит закупки армейской техники",
+      "Непосредственно отдает боевые приказы",
+      "Полностью обеспечивает тыловое снабжение",
+      "Осуществляет долгосрочное оперативное планирование"
+    ],
+    correct: "Непосредственно отдает боевые приказы"
+  },
+  {
+    q: "Какую роль в системе управления ВС РФ выполняет Минобороны России?",
+    a: [
+      "Отдает прямые боевые приказы",
+      "Контролирует космические спутниковые группировки",
+      "Осуществляет планирование военных действий",
+      "Обеспечивает снабжение армии ресурсами"
+    ],
+    correct: "Обеспечивает снабжение армии ресурсами"
+  },
+  {
+    q: "За реализацию какой функции в блоке управления отвечает Генштаб?",
+    a: [
+      "Осуществляет детальное военное планирование",
+      "Руководит вещевым снабжением войск",
+      "Отдает стратегические политические приказы",
+      "Разрабатывает медицинские полевые протоколы"
+    ],
+    correct: "Осуществляет детальное военное планирование"
+  },
+  {
+    q: "Закончите формулировку: «В блоке высшего руководства планирование ведет...»",
+    a: [
+      "Министерство обороны Российской Федерации",
+      "Ставка Верховного Главнокомандующего войсками",
+      "Генеральный штаб Вооруженных Сил",
+      "Специальные войска боевого обеспечения"
+    ],
+    correct: "Генеральный штаб Вооруженных Сил"
+  },
+  {
+    q: "Какая формулировка закреплена за блоком высшего руководства армии?",
+    a: [
+      "Инфраструктура и боевое обеспечение",
+      "«Мозг армии»: Высшее руководство",
+      "Высокомобильные силы быстрого реагирования",
+      "Специальные войска стратегического назначения"
+    ],
+    correct: "«Мозг армии»: Высшее руководство"
+  },
+  {
+    q: "Какую главную задачу выполняют Сухопутные войска согласно схеме?",
+    a: [
+      "Создает ракетный оборонительный зонтик",
+      "Патрулирует внешние морские акватории",
+      "Гарантируют ответное ядерное сдерживание",
+      "Держат границы, отражают атаки"
+    ],
+    correct: "Держат границы, отражают атаки"
+  },
+  {
+    q: "Закончите мысль: «В сфере применения военной силы на суше действуют...»",
+    a: [
+      "Воздушно-десантные войска быстрого реагирования",
+      "Сухопутные войска Российской Федерации",
+      "Инженерные подразделения боевого обеспечения",
+      "Ракетные войска стратегического назначения"
+    ],
+    correct: "Сухопутные войска Российской Федерации"
+  },
+  {
+    q: "Какая формулировка раскрывает назначение Воздушно-космических сил?",
+    a: [
+      "Держит границы, отражает атаки",
+      "Обеспечивает высадку во вражеском тылу",
+      "Создает зонтик, контролирует небо",
+      "Патрулирует акватории, защищает побережье"
+    ],
+    correct: "Создает зонтик, контролирует небо"
+  },
+  {
+    q: "Какая специальная система защиты включена в состав ВКС на схеме?",
+    a: [
+      "Радиоэлектронная борьба эфира (РЭБ)",
+      "Материальное обеспечение тыла (МТО)",
+      "Беспилотные летательные аппараты (БПЛА)",
+      "Противовоздушная оборона страны (ПВО)"
+    ],
+    correct: "Противовоздушная оборона страны (ПВО)"
+  },
+  {
+    q: "В каких природных средах призваны действовать части ВКС РФ?",
+    a: [
+      "В воздушном пространстве и космосе",
+      "На суше и прибрежных территориях",
+      "В открытых океанах и морях",
+      "Во всех существующих природных средах"
+    ],
+    correct: "В воздушном пространстве и космосе"
+  },
+  {
+    q: "Какое ключевое назначение закреплено за Военно-Морским Флотом?",
+    a: [
+      "Создает защитный зонтик и рубежи",
+      "Защищает рубежи и патрулирует акватории",
+      "Обеспечивает скрытную высадку в тылу",
+      "Отражает удары на открытой суше"
+    ],
+    correct: "Защищает рубежи и патрулирует акватории"
+  },
+  {
+    q: "Где именно прикрывает основные сферы применения силы флот РФ?",
+    a: [
+      "На сухопутных пограничных участках страны",
+      "В верхних слоях околоземной атмосферы",
+      "На пространствах морей и океанов",
+      "В глубинных тыловых районах противника"
+    ],
+    correct: "На пространствах морей и океанов"
+  },
+  {
+    q: "Какая общая формулировка объединяет три базовых вида войск?",
+    a: [
+      "Защита на суше, воздухе, море",
+      "Стратегический резерв быстрого реагирования сил",
+      "Инфраструктура и специальное обеспечение связи",
+      "Гарантия непрерывного ядерного сдерживания баз"
+    ],
+    correct: "Защита на суше, воздухе, море"
+  },
+  {
+    q: "Сколько самостоятельных видов войск представлено на схеме?",
+    a: [
+      "Ровно два основных вида войск",
+      "Ровно три базовых вида войск",
+      "Четыре отдельных рода войск армии",
+      "Пять специализированных служб обеспечения"
+    ],
+    correct: "Ровно три базовых вида войск"
+  },
+  {
+    q: "Какую ключевую задачу выполняют РВСН согласно инфографике?",
+    a: [
+      "Обеспечивают срочную высадку десанта",
+      "Создают плотный противовоздушный зонтик",
+      "Гарантируют надежное ядерное сдерживание",
+      "Осуществляют наземное инженерное обеспечение"
+    ],
+    correct: "Гарантируют надежное ядерное сдерживание"
+  },
+  {
+    q: "Закончите формулировку: «Основу стратегического щита страны несут...»",
+    a: [
+      "Инженерные части специального назначения",
+      "Ракетные войска стратегического назначения",
+      "Воздушно-десантные войска быстрого реагирования",
+      "Подразделения радиоэлектронной борьбы армии"
+    ],
+    correct: "Ракетные войска стратегического назначения"
+  },
+  {
+    q: "Какое назначение закреплено за Воздушно-десантными войсками?",
+    a: [
+      "Гарантируют непрерывное ядерное сдерживание",
+      "Создают глобальный ракетный защитный зонтик",
+      "Защищают внешние морские пограничные рубежи",
+      "Обеспечивают мгновенную высадку в тылу"
+    ],
+    correct: "Обеспечивают мгновенную высадку в тылу"
+  },
+  {
+    q: "Как в инфографике охарактеризованы части ВДВ?",
+    a: [
+      "Высокомобильные силы быстрого реагирования",
+      "Главные сухопутные силы обороны границ",
+      "Базовые соединения противовоздушной обороны",
+      "Специальные части непрерывного радиоподавления"
+    ],
+    correct: "Высокомобильные силы быстрого реагирования"
+  },
+  {
+    q: "Какие структуры вместе формируют Уровень 3 («Особый резерв»)?",
+    a: [
+      "Подразделения РЭБ и расчеты БПЛА",
+      "Инженерные войска и военные медики",
+      "Соединения РВСН и части ВДВ",
+      "Части ПВО и космические силы"
+    ],
+    correct: "Соединения РВСН и части ВДВ"
+  },
+  {
+    q: "К какому уровню структуры относятся части РВСН и ВДВ?",
+    a: [
+      "Уровень 3: Особый стратегический резерв",
+      "Уровень 1: Высший блок управления",
+      "Уровень 2: Основные три вида",
+      "Уровень 4: Обеспечение и инфраструктура"
+    ],
+    correct: "Уровень 3: Особый стратегический резерв"
+  },
+  {
+    q: "Какую роль выполняют Войска связи согласно Уровню 4 схемы?",
+    a: [
+      "Осуществляют круглосуточную радиоэлектронную борьбу",
+      "Подразделения связи поддерживают боеспособность",
+      "Применяют современные беспилотные комплексы",
+      "Оказывают полевую квалифицированную помощь"
+    ],
+    correct: "Подразделения связи поддерживают боеспособность"
+  },
+  {
+    q: "За реализацию какой задачи отвечают части РЭБ?",
+    a: [
+      "Обеспечивают стабильное техническое снабжение",
+      "Организуют инженерное прикрытие боеспособности",
+      "Осуществляют активную радиоэлектронную борьбу",
+      "Контролируют воздушное околоземное пространство"
+    ],
+    correct: "Осуществляют активную радиоэлектронную борьбу"
+  },
+  {
+    q: "Какая формулировка описывает функцию подразделений БПЛА?",
+    a: [
+      "Создание прочного ракетного зонтика",
+      "Применение современных беспилотных систем",
+      "Подавление каналов навигации противника",
+      "Инженерное обслуживание боевой техники"
+    ],
+    correct: "Применение современных беспилотных систем"
+  },
+  {
+    q: "Чем занимаются Инженерные войска в структуре обеспечения?",
+    a: [
+      "Передача зашифрованных сигналов управления",
+      "Защита внешних рубежей акваторий",
+      "Подавление средств радиоэлектронного излучения",
+      "Инженерное непрерывное обеспечение боеспособности"
+    ],
+    correct: "Инженерное непрерывное обеспечение боеспособности"
+  },
+  {
+    q: "Какую задачу решает Медицинская служба на схеме Уровня 4?",
+    a: [
+      "Поддерживает боеспособность радиоэлектронных сетей",
+      "Проводит инженерную подготовку рубежей",
+      "Осуществляет полноценное медицинское обеспечение",
+      "Обеспечивает мгновенную скрытную высадку"
+    ],
+    correct: "Осуществляет полноценное медицинское обеспечение"
+  },
+  {
+    q: "Сколько служб обеспечения выделено на Уровне 4 инфографики?",
+    a: [
+      "Ровно три основных направления",
+      "Четыре отдельных боевых службы",
+      "Ровно пять специализированных структур",
+      "Шесть вспомогательных армейских частей"
+    ],
+    correct: "Ровно пять специализированных структур"
+  },
+  {
+    q: "Как озаглавлен Уровень 4 в структуре Вооруженных Сил?",
+    a: [
+      "Специальные войска: Инфраструктура и обеспечение",
+      "«Мозг армии»: Стратегическое командование войск",
+      "Три вида войск: Защита рубежей",
+      "Высокомобильные силы быстрого десантного реагирования"
+    ],
+    correct: "Специальные войска: Инфраструктура и обеспечение"
+  },
+  {
+    q: "Какая структура относится к специальным войскам обеспечения?",
+    a: [
+      "Ракетные войска стратегического назначения",
+      "Воздушно-десантные войска быстрого реагирования",
+      "Сухопутные войска территориальной обороны",
+      "Подразделения радиоэлектронной борьбы (РЭБ)"
+    ],
+    correct: "Подразделения радиоэлектронной борьбы (РЭБ)"
+  },
+  {
+    q: "Как правильно расшифровывается армейская аббревиатура «СВ»?",
+    a: [
+      "Специальные войска быстрого реагирования",
+      "Сухопутные войска Российской Федерации",
+      "Стратегическое вооружение сухопутных баз",
+      "Силы внезапного армейского удара"
+    ],
+    correct: "Сухопутные войска Российской Федерации"
+  },
+  {
+    q: "Как на представленной схеме расшифровано сокращение «ВКС»?",
+    a: [
+      "Военно-командный состав армии",
+      "Войска круглосуточного слежения",
+      "Воздушно-космические оборонительные силы",
+      "Военно-космическая служба флота"
+    ],
+    correct: "Воздушно-космические оборонительные силы"
+  },
+  {
+    q: "Что означает аббревиатура «ВМФ» в составе Вооруженных Сил?",
+    a: [
+      "Военно-маневренные формирования границ",
+      "Войска морского фронта",
+      "Военно-мостовые формирования тыла",
+      "Военно-Морской Флот государства"
+    ],
+    correct: "Военно-Морской Флот государства"
+  },
+  {
+    q: "Какая расшифровка соответствует аббревиатуре «ПВО»?",
+    a: [
+      "Пограничные войска особого назначения",
+      "Противовоздушная оборона важных объектов",
+      "Полевое военное обеспечение",
+      "Передовые взводы оперативного прикрытия"
+    ],
+    correct: "Противовоздушная оборона важных объектов"
+  },
+  {
+    q: "Каково полное официальное название аббревиатуры «РВСН»?",
+    a: [
+      "Резервные войска специального назначения",
+      "Российские взводы стратегического надзора",
+      "Районные войска срочного наведения",
+      "Ракетные войска стратегического назначения"
+    ],
+    correct: "Ракетные войска стратегического назначения"
+  },
+  {
+    q: "Какая расшифровка закреплена за аббревиатурой «ВДВ»?",
+    a: [
+      "Воздушно-десантные войска быстрого реагирования",
+      "Военно-дорожные взводы тылового снабжения",
+      "Вспомогательные дружины войсковой разведки",
+      "Воздушные дивизионы вертолетной поддержки"
+    ],
+    correct: "Воздушно-десантные войска быстрого реагирования"
+  },
+  {
+    q: "Как расшифровывается сокращение «РЭБ» в специальных частях?",
+    a: [
+      "Рота экстренного боевого реагирования",
+      "Войска радиоэлектронной постоянной борьбы",
+      "Резервный эшелон бронетанковых сил",
+      "Районная эвакуационная база медиков"
+    ],
+    correct: "Войска радиоэлектронной постоянной борьбы"
+  },
+  {
+    q: "Что означает военная аббревиатура «БПЛА» на схеме?",
+    a: [
+      "Боевые патрульные линии армии",
+      "Бронированные полевые легкие автомобили",
+      "Беспилотные летательные аппараты разведки",
+      "Батальоны передовой логистики артиллерии"
+    ],
+    correct: "Беспилотные летательные аппараты разведки"
+  },
+  {
+    q: "Какая из структур НЕ входит в число трех видов войск ВС РФ?",
+    a: [
+      "Сухопутные войска пограничной обороны",
+      "Воздушно-десантные войска быстрого реагирования",
+      "Воздушно-космические оборонительные силы страны",
+      "Военно-Морской Флот открытых морей"
+    ],
+    correct: "Воздушно-десантные войска быстрого реагирования"
+  },
+  {
+    q: "Какая структура НЕ входит в Уровень 4 (Специальные войска)?",
+    a: [
+      "Подразделения войск армейской связи",
+      "Подразделения радиоэлектронной борьбы армии",
+      "Ракетные войска стратегического назначения",
+      "Формирования инженерного обеспечения войск"
+    ],
+    correct: "Ракетные войска стратегического назначения"
+  },
+  {
+    q: "Где несут дежурство силы ВМФ согласно таблице-шпаргалке?",
+    a: [
+      "Исключительно на суше страны",
+      "В воздушном пространстве орбиты",
+      "На пространствах морей и океанов",
+      "В тыловых зонах прикрытия баз"
+    ],
+    correct: "На пространствах морей и океанов"
+  },
+  {
+    q: "Где действуют части ВКС согласно таблице-шпаргалке схемы?",
+    a: [
+      "В воздушном пространстве и космосе",
+      "На сухопутных рубежах границы",
+      "На водных просторах океанов",
+      "В подземных командных пунктах"
+    ],
+    correct: "В воздушном пространстве и космосе"
+  }
+];
+
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+const sessionQuestions = shuffleArray(questionBank).slice(0, 20).map(item => {
+  const shuffledOptions = shuffleArray(item.a);
+  return {
+    q: item.q,
+    options: shuffledOptions,
+    correctIdx: shuffledOptions.indexOf(item.correct)
+  };
+});
+
+let currentStep = 0;
+let score = 0;
+let isHolding = false;
+let isQuizFinished = false;
+let questionBurned = false;
+let holdTouchId = null;
+let isAnswering = false;
+
+const testScreen = document.getElementById("test-screen");
+const resultScreen = document.getElementById("result-screen");
+const blackoutShield = document.getElementById("blackout-shield");
+
+const qCounter = document.getElementById("q-counter");
+const pBar = document.getElementById("p-bar");
+const qText = document.getElementById("q-text");
+const optionsBox = document.getElementById("options-box");
+const protectedWrap = document.getElementById("protected-wrap");
+const holdBtn = document.getElementById("hold-btn");
+
+/* =========================================================
+   ЯДРО МУЛЬТИТАЧА (100% ПОДДЕРЖКА WEBVIEW И GITHUB PAGES)
+   ========================================================= */
+function startHolding(id) {
+  if (isQuizFinished || questionBurned) return;
+  holdTouchId = id;
+  isHolding = true;
+  protectedWrap.classList.add("active-view");
+  holdBtn.classList.add("holding");
+  holdBtn.textContent = "👀 ЧТЕНИЕ АКТИВНО (ВЫБЕРИТЕ ОТВЕТ)";
+}
+
+function stopHolding() {
+  holdTouchId = null;
+  isHolding = false;
+  protectedWrap.classList.remove("active-view");
+  holdBtn.classList.remove("holding");
+  holdBtn.textContent = "👇 ЗАЖМИТЕ И УДЕРЖИВАЙТЕ ДЛЯ ЧТЕНИЯ";
+}
+
+// 1. Палец удержания (Touch API)
+holdBtn.addEventListener("touchstart", (e) => {
+  if (holdTouchId === null && e.changedTouches.length > 0) {
+    startHolding(e.changedTouches[0].identifier);
+  }
+}, { passive: true });
+
+// Мышь для ПК
+holdBtn.addEventListener("mousedown", () => startHolding("mouse"));
+window.addEventListener("mouseup", () => {
+  if (holdTouchId === "mouse") stopHolding();
+});
+
+// Отслеживание отрыва пальца удержания в любом месте экрана
+window.addEventListener("touchend", (e) => {
+  if (holdTouchId !== null && holdTouchId !== "mouse") {
+    for (let i = 0; i < e.changedTouches.length; i++) {
+      if (e.changedTouches[i].identifier === holdTouchId) {
+        stopHolding();
+        break;
+      }
+    }
+  }
+}, { passive: true });
+
+window.addEventListener("touchcancel", (e) => {
+  if (holdTouchId !== null && holdTouchId !== "mouse") {
+    for (let i = 0; i < e.changedTouches.length; i++) {
+      if (e.changedTouches[i].identifier === holdTouchId) {
+        stopHolding();
+        break;
+      }
+    }
+  }
+}, { passive: true });
+
+// 2. Второй палец: глобальный перехват координат в момент касания
+window.addEventListener("touchstart", (e) => {
+  if (isAnswering || isQuizFinished || questionBurned) return;
+
+  for (let i = 0; i < e.changedTouches.length; i++) {
+    const touch = e.changedTouches[i];
+    // Если это палец удержания — пропускаем
+    if (touch.identifier === holdTouchId) continue;
+
+    // Ищем элемент под вторым пальцем через физические координаты
+    const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (!targetEl) continue;
+
+    const card = targetEl.closest(".option-item");
+    if (card) {
+      const index = parseInt(card.dataset.index, 10);
+      if (!isNaN(index)) {
+        isAnswering = true;
+        card.classList.add("tapped");
+        setTimeout(() => pickAnswer(index), 80);
+        break;
+      }
+    }
+  }
+}, { passive: true });
+
+// Клик мышью для десктопа
+optionsBox.addEventListener("click", (e) => {
+  if (isAnswering || isQuizFinished || questionBurned) return;
+  const card = e.target.closest(".option-item");
+  if (!card) return;
+  const index = parseInt(card.dataset.index, 10);
+  if (!isNaN(index)) {
+    isAnswering = true;
+    card.classList.add("tapped");
+    setTimeout(() => pickAnswer(index), 80);
+  }
+});
+
+/* Отрисовка текущего вопроса */
+function loadQuestion() {
+  isAnswering = false;
+
+  const data = sessionQuestions[currentStep];
+  qCounter.textContent = `Вопрос ${currentStep + 1} из 20`;
+  pBar.style.width = `${(currentStep / 20) * 100}%`;
+  qText.textContent = data.q;
+
+  optionsBox.innerHTML = "";
+  const letters = ["А", "Б", "В", "Г"];
+
+  data.options.forEach((optText, index) => {
+    const card = document.createElement("div");
+    card.className = "option-item";
+    card.dataset.index = index;
+    card.innerHTML = `
+      <div class="option-letter">${letters[index]}</div>
+      <div class="option-text">${optText}</div>
+    `;
+    optionsBox.appendChild(card);
+  });
+}
+
+function pickAnswer(index) {
+  if (isQuizFinished || questionBurned) return;
+
+  const data = sessionQuestions[currentStep];
+  if (index === data.correctIdx) {
+    score++;
+  }
+
+  nextStep();
+}
+
+function nextStep() {
+  currentStep++;
+  if (currentStep < 20) {
+    loadQuestion();
+  } else {
+    finishQuiz();
+  }
+}
+
+/* =========================================================
+   БЛЭКАУТ: ЗАЩИТА С ЗАДЕРЖКОЙ ДЛЯ QR-СКАНЕРОВ
+   ========================================================= */
+let isAppReady = false;
+// 1500 мс задержки, чтобы WebView сканера QR-кода успел стабилизировать фокус
+setTimeout(() => { isAppReady = true; }, 1500);
+
+function triggerBlackout() {
+  if (!isAppReady || isQuizFinished || questionBurned) return;
+
+  questionBurned = true;
+  stopHolding();
+
+  blackoutShield.style.display = "flex";
+  qText.textContent = "";
+  optionsBox.innerHTML = "";
+}
+
+function handleFocusReturn() {
+  if (!questionBurned) return;
+
+  setTimeout(() => {
+    blackoutShield.style.display = "none";
+    questionBurned = false;
+    nextStep();
+  }, 1800);
+}
+
+// Защита от сворачивания и скриншотов
+window.addEventListener("blur", triggerBlackout);
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) triggerBlackout();
+});
+window.addEventListener("focus", handleFocusReturn);
+
+window.addEventListener("keyup", (e) => {
+  if (e.key === "PrintScreen") {
+    triggerBlackout();
+    handleFocusReturn();
+  }
+});
+window.addEventListener("keydown", (e) => {
+  if (e.key === "PrintScreen") {
+    e.preventDefault();
+    triggerBlackout();
+    handleFocusReturn();
+  }
+  if (
+    e.key === "F12" ||
+    ((e.ctrlKey || e.metaKey) && ["c", "u", "s", "p", "a"].includes(e.key.toLowerCase())) ||
+    ((e.ctrlKey || e.metaKey) && e.shiftKey && ["i", "j", "c"].includes(e.key.toLowerCase()))
+  ) {
+    e.preventDefault();
+    return false;
+  }
+});
+
+document.addEventListener("contextmenu", (e) => e.preventDefault());
+document.addEventListener("dragstart", (e) => e.preventDefault());
+
+/* =========================================================
+   ШКАЛА ОЦЕНОК (ОТ 15 ВЕРНЫХ - 4, МЕНЬШЕ 5 - 2)
+   ========================================================= */
+function finishQuiz() {
+  isQuizFinished = true;
+  stopHolding();
+  testScreen.classList.remove("current");
+  resultScreen.classList.add("current");
+
+  const pct = Math.round((score / 20) * 100);
+  document.getElementById("score-text").textContent = `${score} из 20 верно`;
+  document.getElementById("percent-text").textContent = `${pct}% правильных ответов`;
+
+  const markCircle = document.getElementById("mark-circle");
+  const analysisText = document.getElementById("analysis-text");
+  markCircle.className = "mark-circle";
+
+  if (score >= 18) {
+    markCircle.classList.add("mark-5");
+    markCircle.textContent = "5";
+    analysisText.innerHTML = "<strong>Блестящий результат!</strong> Вы безупречно ориентируетесь в структуре Вооруженных Сил РФ: знаете вертикаль высшего руководства, четко разделяете виды войск, стратегический резерв и задачи специальных подразделений.";
+  } else if (score >= 15) {
+    markCircle.classList.add("mark-4");
+    markCircle.textContent = "4";
+    analysisText.innerHTML = "<strong>Хороший уровень знаний.</strong> Основные уровни и задачи войск усвоены уверенно. Небольшие неточности связаны со специальными войсками обеспечения или расшифровкой аббревиатур.";
+  } else if (score >= 5) {
+    markCircle.classList.add("mark-3");
+    markCircle.textContent = "3";
+    analysisText.innerHTML = "<strong>Удовлетворительно.</strong> Базовый порог преодолен, но присутствует путаница между видами войск и отдельными родами войск (РВСН, ВДВ). Рекомендуется повторить инфографику.";
+  } else {
+    markCircle.classList.add("mark-2");
+    markCircle.textContent = "2";
+    analysisText.innerHTML = "<strong>Тема не освоена (порог не пройден).</strong> Менее 5 правильных ответов либо часть вопросов была аннулирована защитным экраном. Необходимо изучить материал заново.";
+  }
+}
+
+// Запуск первой сессии
+loadQuestion();
+</script>
+</body>
+</html>
